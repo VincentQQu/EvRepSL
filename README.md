@@ -8,7 +8,7 @@ EvRepSL leverages a two-stage framework for self-supervised learning on event st
 
 ## Repository Structure
 
-- **event_representations.py**: Contains the implementation of the proposed event representation methods, **EvRep** and **EvRepSL**.
+- **event_representations.py**: Contains the implementation of the proposed event representation methods, **EvRep** and **EvRepSL**, along with some common representations such as voxel grid, two channel, and four channel.
 - **models.py**: Defines the architecture for **RepGen**, the representation generator trained using self-supervised learning.
 - **RepGen.pth**: Pretrained weights for **RepGen** that can be directly used for high-quality feature generation. You can download it from [Google Drive](https://drive.google.com/drive/folders/1poN9xeTUrJhpBgHV2xGRxkR1Ymx4IbXt?usp=sharing).
   
