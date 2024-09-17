@@ -19,4 +19,4 @@ EvRepSL leverages a two-stage framework for self-supervised learning on event st
 Make sure you have the following dependencies installed:
 
 ```bash
-pip install torch numpy
+pip3 install torch numpy
