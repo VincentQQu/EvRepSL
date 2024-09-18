@@ -454,12 +454,9 @@ class EffWNet(nn.Module):
 
 
     def forward(self, x):
-        f0, x0 = x[:,0,:,:].unsqueeze(dim=1), x[:,1:,:,:]
-        x_ie_0 = x0[:,0,:,:].unsqueeze(dim=1)
-        # f0 = torch.unsqueeze(f0, dim=1)
-        # print(x.shape)
 
-        if self.inc_f0 == 1: x0 = x
+
+        x0 = x
         
         x1 = self.inc(x0)
         xs = [x1]
@@ -479,7 +476,7 @@ class EffWNet(nn.Module):
             # print("xr", xr.shape)
             x_ie = up(x_ie, xr)
             # print(x_ie.shape)
-        clean_ie = self.out_clean_ie(x_ie) # , x_ie_0
+        clean_ie = self.out_clean_ie(x_ie)
 
         # print(clean_ie.shape)
         if self.c_is_const:
@@ -501,18 +498,8 @@ class EffWNet(nn.Module):
                 # print(c.shape)
                 ce = c * clean_ie
 
-        # print(ce.shape)
-        # f1 = torch.unsqueeze(f1, 1)
-        # f1 = x (f0+k) - k
-        f1 = self.ce_to_f1(ce, f0)
 
-        k_dict = self.ce_to_f1.state_dict()
-        k = k_dict['k'].data.expand(f1.shape)
-        c = c.expand(f1.shape)
-        
- 
-
-        preds = torch.cat((f1, clean_ie, c, k), 1)
+        preds = torch.cat((x, clean_ie, c), dim=1)
 
 
         return preds
