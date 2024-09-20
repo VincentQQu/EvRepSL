@@ -21,6 +21,8 @@ Make sure you have the following dependencies installed:
 ```bash
 pip3 install torch numpy
 
+python3 event_representation
 
+```
 
 ## To Be Updated
