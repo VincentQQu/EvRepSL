@@ -319,6 +319,129 @@ def EvRep_to_EvRepSL(model, ev_rep, device="cuda"):
     return evrepsl
 
 
+# ---------------------------------------------------------------------------
+# Learned generators: PIE-Net / PIE-Net-Lite (PIEM representation)
+# Requires: pip install event-pienet
+# ---------------------------------------------------------------------------
+
+_piem_models = {}
+
+
+def load_PIEM_generator(variant="pie-net", device="cuda", pretrained=True):
+    """
+    Load a cached PIE-Net or PIE-Net-Lite representation generator.
+
+    Args:
+        variant: "pie-net" (full) or "pie-net-lite" (lite)
+        device: "cuda" or "cpu"
+        pretrained: load shipped checkpoint weights
+    """
+    try:
+        from pie_net import load_model, resolve_variant
+    except ImportError as exc:
+        raise ImportError(
+            "PIE-Net generators require event-pienet. Install with: pip install event-pienet"
+        ) from exc
+
+    key = resolve_variant(variant)
+    if key not in _piem_models:
+        _piem_models[key] = load_model(pretrained=pretrained, device=device, variant=key)
+        _piem_models[key].eval()
+    return _piem_models[key]
+
+
+def load_PIENet(device="cuda", pretrained=True):
+    """Load PIE-Net (full model)."""
+    return load_PIEM_generator(variant="pie-net", device=device, pretrained=pretrained)
+
+
+def load_PIENetLite(device="cuda", pretrained=True):
+    """Load PIE-Net-Lite (faster, smaller)."""
+    return load_PIEM_generator(variant="pie-net-lite", device=device, pretrained=pretrained)
+
+
+def reset_piem_states(variant=None):
+    """Reset streaming state. Call between independent event sequences."""
+    if variant is None:
+        for model in _piem_models.values():
+            model.reset_states()
+        return
+
+    from pie_net import resolve_variant
+
+    model = _piem_models.get(resolve_variant(variant))
+    if model is not None:
+        model.reset_states()
+
+
+def voxel_to_PIEM_representation(voxel, model=None, variant="pie-net", device="cuda"):
+    """
+    Map a 5-bin voxel grid to a PIEM representation.
+
+    Returns a dict with individual PIEM maps and a stacked 5-channel tensor:
+        mean_exp_z, var_exp_z, k, mean_f1, var_f1  — each [1, H, W]
+        piem  — stacked [5, H, W] representation for downstream tasks
+
+    Channel order in piem:
+        0: mean_exp_z  (expected log-intensity change)
+        1: var_exp_z   (uncertainty of Z)
+        2: k           (PIEM scaling parameter)
+        3: mean_f1     (reconstructed intensity)
+        4: var_f1      (frame uncertainty)
+    """
+    from pie_net import stack_piem_representation
+
+    if model is None:
+        model = load_PIEM_generator(variant=variant, device=device)
+
+    if not torch.is_tensor(voxel):
+        voxel = torch.tensor(voxel, dtype=torch.float32, device=device)
+    else:
+        voxel = voxel.to(device=device, dtype=torch.float32)
+
+    if voxel.dim() == 3:
+        voxel = voxel.unsqueeze(0)
+
+    with torch.inference_mode():
+        out = model(voxel)
+
+    piem = stack_piem_representation(out).squeeze(0).cpu().numpy()
+    return {
+        "mean_exp_z": out["mean_exp_z"].squeeze(0).cpu().numpy(),
+        "var_exp_z": out["var_exp_z"].squeeze(0).cpu().numpy(),
+        "k": out["k"].squeeze(0).cpu().numpy(),
+        "mean_f1": out["mean_f1"].squeeze(0).cpu().numpy(),
+        "var_f1": out["var_f1"].squeeze(0).cpu().numpy(),
+        "piem": piem,
+    }
+
+
+def events_to_PIEM_representation(
+    event_xs,
+    event_ys,
+    event_timestamps,
+    event_polarities,
+    resolution=(320, 240),
+    temporal_bins=5,
+    variant="pie-net",
+    device="cuda",
+    model=None,
+):
+    """End-to-end: raw events -> voxel grid -> PIEM representation [5, H, W]."""
+    voxel = events_to_voxel_grid(
+        event_xs,
+        event_ys,
+        event_timestamps,
+        event_polarities,
+        resolution=resolution,
+        temporal_bins=temporal_bins,
+    )
+    return voxel_to_PIEM_representation(
+        voxel,
+        model=model,
+        variant=variant,
+        device=device,
+    )
 
 
 if __name__ == "__main__":
@@ -348,3 +471,18 @@ if __name__ == "__main__":
     ev_rep_sl = EvRep_to_EvRepSL(model, ev_rep, device)
 
     print("EvRepSL Representation was generated!")
+
+    # PIEM representation (PIE-Net / PIE-Net-Lite)
+    try:
+        piem_rep = events_to_PIEM_representation(
+            event_xs,
+            event_ys,
+            event_timestamps,
+            event_polarities,
+            resolution=resolution,
+            variant="pie-net",
+            device=device,
+        )
+        print("PIEM representation was generated!", piem_rep["piem"].shape)
+    except ImportError:
+        print("Skipping PIEM demo (install with: pip install event-pienet)")

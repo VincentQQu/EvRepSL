@@ -1,0 +1,3 @@
+torch
+numpy
+event-pienet>=1.1.2
