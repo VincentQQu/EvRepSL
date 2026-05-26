@@ -96,11 +96,13 @@ Run the demo script:
 python3 event_representations.py
 ```
 
-## To Cite
+## Citation
 
-EvRepSL paper:
+### EvRepSL (this repository)
 
-<pre>
+If you use **EvRep**, **EvRepSL**, **RepGen**, or the representation toolkit in this repo, please cite:
+
+```bibtex
 @article{qu2024evrepsl,
   title={EvRepSL: Event-Stream Representation via Self-Supervised Learning for Event-Based Vision},
   author={Qu, Qiang and Chen, Xiaoming and Chung, Yuk Ying and Shen, Yiran},
@@ -108,7 +110,15 @@ EvRepSL paper:
   year={2024},
   publisher={IEEE}
 }
+```
 
+Paper: [IEEE TIP](https://ieeexplore.ieee.org/document/10758409) · [arXiv](https://arxiv.org/abs/2412.07080)
+
+### PIE-Net / PIE-Net-Lite (PIEM generators)
+
+If you use **PIE-Net** or **PIE-Net-Lite** PIEM representations, please also cite E2HQV:
+
+```bibtex
 @inproceedings{qu2024e2hqv,
   title={E2HQV: High-Quality Video Generation from Event Camera via Theory-Inspired Model-Aided Deep Learning},
   author={Qu, Qiang and Shen, Yiran and Chen, Xiaoming and Chung, Yuk Ying and Liu, Tongliang},
@@ -118,4 +128,6 @@ EvRepSL paper:
   pages={4632--4640},
   year={2024}
 }
-</pre>
+```
+
+Paper: [AAAI](https://ojs.aaai.org/index.php/AAAI/article/view/28263) · [arXiv](https://arxiv.org/abs/2401.08117)
