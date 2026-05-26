@@ -24,9 +24,7 @@ def events_to_voxel_grid(event_xs, event_ys, event_timestamps, event_polarities,
     timestamps = event_timestamps
     first_stamp = timestamps[0]
     last_stamp = timestamps[-1]
-    deltaT = last_stamp - first_stamp
-    if deltaT == 0:
-        deltaT = 1.0  # Prevent division by zero if all timestamps are the same
+    deltaT = max(last_stamp - first_stamp, 1.0)  # Match PIE-Net; avoid div-by-zero on single events
 
     # Normalize timestamps to the range [0, temporal_bins - 1]
     normalized_timestamps = (temporal_bins - 1) * (timestamps - first_stamp) / deltaT
