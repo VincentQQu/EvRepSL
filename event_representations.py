@@ -344,10 +344,11 @@ def load_PIEM_generator(variant="pie-net", device="cuda", pretrained=True):
         ) from exc
 
     key = resolve_variant(variant)
-    if key not in _piem_models:
-        _piem_models[key] = load_model(pretrained=pretrained, device=device, variant=key)
-        _piem_models[key].eval()
-    return _piem_models[key]
+    cache_key = (key, str(device))
+    if cache_key not in _piem_models:
+        _piem_models[cache_key] = load_model(pretrained=pretrained, device=device, variant=key)
+        _piem_models[cache_key].eval()
+    return _piem_models[cache_key]
 
 
 def load_PIENet(device="cuda", pretrained=True):
@@ -360,18 +361,24 @@ def load_PIENetLite(device="cuda", pretrained=True):
     return load_PIEM_generator(variant="pie-net-lite", device=device, pretrained=pretrained)
 
 
-def reset_piem_states(variant=None):
+def reset_piem_states(variant=None, device=None):
     """Reset streaming state. Call between independent event sequences."""
-    if variant is None:
+    if variant is None and device is None:
         for model in _piem_models.values():
             model.reset_states()
         return
 
     from pie_net import resolve_variant
 
-    model = _piem_models.get(resolve_variant(variant))
-    if model is not None:
-        model.reset_states()
+    if variant is not None:
+        variant = resolve_variant(variant)
+        for (cached_variant, _cached_device), model in _piem_models.items():
+            if cached_variant == variant:
+                model.reset_states()
+    elif device is not None:
+        for (_cached_variant, cached_device), model in _piem_models.items():
+            if cached_device == str(device):
+                model.reset_states()
 
 
 def voxel_to_PIEM_representation(voxel, model=None, variant="pie-net", device="cuda"):
